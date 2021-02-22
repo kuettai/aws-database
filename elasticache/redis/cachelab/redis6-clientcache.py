@@ -1,4 +1,23 @@
 #!/usr/bin/env python3
+'''
+Setup instruction:
+    - look for: redishosts variable and change to your endpoint accordingly
+
+Testing instruction:
+    1) Set 100 objects in servers
+    ./redis6-clientcache.py --cache-size 100
+
+    2) Set 100 objects in servers, and cache 90 objects locally
+    ./redis6-clientcache.py --cache-size 100 --local-cache-size 90
+
+    3) On top of step 2, we set 10% of new writes to trigger local cache invalidation
+    ./redis6-clientcache.py --cache-size 100 --local-cache-size 90 --read-ratio 0.9
+
+    4) Test against different hosts (subject to how many endpoint set in Setup)
+    ./redis6-clientcache.py --cache-size 100 --az 0
+    ./redis6-clientcache.py --cache-size 100 --az 1
+
+'''
 
 import argparse
 import time
@@ -78,10 +97,18 @@ def main_session(stdscr):
     parser.add_argument('--local-cache-size', type=int)
     parser.add_argument('--cache-size', type=int)
     parser.add_argument('--read-ratio', default=1.0, type=float)
+    parser.add_argument('--az', default=0, type=int)
 
     args = parser.parse_args()
 
-    redis_client = redis.Redis(host='clientcachetest.mils3x.0001.use1.cache.amazonaws.com')
+    # SETUP: Change the endpoint to your endpoint accordingly
+    redishosts = ['clientsidecachetestredis.fi8qsq.0001.apse1.cache.amazonaws.com',
+        'testredisazb.fi8qsq.0001.apse1.cache.amazonaws.com']
+
+    # TODO: Enhance error handling on array out of bound
+    redishost = redishosts[args.az]
+
+    redis_client = redis.Redis(host=redishost)
     redis_client.flushall()
 
     caching_client = ClientSideCachingConnection(redis_client, args.local_cache_size)
